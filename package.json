@@ -9,7 +9,8 @@
 		"parse",
 		"format",
 		"p",
-		"docs"
+		"docs",
+		"mock.js"
 	],
 	"author": "Jannis R <mail@jannisr.de>",
 	"homepage": "https://github.com/derhuerst/hafas-client",
