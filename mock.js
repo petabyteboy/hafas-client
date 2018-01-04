@@ -1,11 +1,6 @@
 'use strict'
 
-// const minBy = require('lodash/minBy')
-// const maxBy = require('lodash/maxBy')
-
-// const validateProfile = require('./lib/validate-profile')
-// const defaultProfile = require('./lib/default-profile')
-// const request = require('./lib/request')
+const destination = require('@turf/destination')
 
 const randomId = l => Math.random().toString(16).substr(2, l)
 
@@ -110,92 +105,138 @@ for (let i = 0; i < 10; i++) {
 	mockLocations.push(mockAddress())
 }
 
-const createClientMock = (profile) => {
-	// profile = Object.assign({}, defaultProfile, profile)
-	// validateProfile(profile)
-
-	const departures = (station, opt = {}) => {
-		if ('object' === typeof station) station = station.id
-		else if ('string' !== typeof station) {
-			throw new Error('station must be an object or a string.')
-		}
-
-		opt = Object.assign({
-			direction: null, // only show departures heading to this station
-			duration: 10 // show departures for the next n minutes
-		}, opt)
-		opt.when = opt.when || new Date()
-		const products = profile.formatProducts(opt.products || {})
-
-		const deps = []
-		let t = +opt.when
-		for (let i = 0; i < 5; i++) {
-			let delay = null
-			if (Math.random() > .3) {
-				delay = mockDelay()
-
-				t += delay * 1000
-				t += minute * Math.round(1 + Math.random() * 3)
-			} else t += minute * Math.round(1 + Math.random() * 5)
-
-			deps.push(mockDeparture(id, t, delay))
-		}
-
-		return Promise.resolve(deps)
+const departures = (station, opt = {}) => {
+	if ('object' === typeof station) station = station.id
+	else if ('string' !== typeof station) {
+		throw new Error('station must be an object or a string.')
 	}
 
-	const journeys = (from, to, opt = {}) => {
-		if ('object' === typeof from) from = from.id
-		else if ('string' !== typeof from) {
-			throw new Error('from must be an object or a string.')
-		}
-		if ('object' === typeof to) to = to.id
-		else if ('string' !== typeof to) {
-			throw new Error('to must be an object or a string.')
-		}
+	opt = Object.assign({
+		direction: null, // only show departures heading to this station
+		duration: 10 // show departures for the next n minutes
+	}, opt)
+	opt.when = opt.when || new Date()
+	const products = profile.formatProducts(opt.products || {})
 
-		opt = Object.assign({
-			results: 5 // how many journeys?
-		}, opt)
-		opt.when = opt.when || new Date()
+	const deps = []
+	let t = +opt.when
+	for (let i = 0; i < 5; i++) {
+		let delay = null
+		if (Math.random() > .3) {
+			delay = mockDelay()
 
-		const journeys = []
-		let t = +opt.when
-		for (let i = 0; i < opt.results; i++) {
-			t += minute * Math.round(1 + Math.random() * 5)
-			const duration = minute * Math.round(3 + Math.random() * 6)
+			t += delay * 1000
+			t += minute * Math.round(1 + Math.random() * 3)
+		} else t += minute * Math.round(1 + Math.random() * 5)
 
-			journeys.push(mockJourney(from, to, t, t + duration))
-		}
-		return Promise.resolve(mockJourneys(from, to, +opt.when, opt.results))
-		return journeys
+		deps.push(mockDeparture(id, t, delay))
 	}
 
-	const locations = (query, opt = {}) => {
-		if ('string' !== typeof query) throw new Error('query must be a string.')
-
-		opt = Object.assign({
-			fuzzy: true, // find only exact matches?
-			results: 10, // how many search results?
-			stations: true,
-			addresses: true,
-			poi: true // points of interest
-		}, opt)
-
-		const res = []
-		for (let l of mockLocations) {
-			if (res.length >= opt.results) continue
-			if (l.type === 'station') {
-				if (opt.stations) res.push(l)
-			} else if (l.id) {
-				if (opt.poi) res.push(l)
-			} else if (opt.addresses) res.push(l)
-		}
-	}
-
-	const client = {departures, journeys, locations}
-	Object.defineProperty(client, 'profile', {value: profile})
-	return client
+	return Promise.resolve(deps)
 }
 
-module.exports = createClientMock
+const journeys = (from, to, opt = {}) => {
+	if ('object' === typeof from) from = from.id
+	else if ('string' !== typeof from) {
+		throw new Error('from must be an object or a string.')
+	}
+	if ('object' === typeof to) to = to.id
+	else if ('string' !== typeof to) {
+		throw new Error('to must be an object or a string.')
+	}
+
+	opt = Object.assign({
+		results: 5 // how many journeys?
+	}, opt)
+	opt.when = opt.when || new Date()
+
+	const journeys = []
+	let t = +opt.when
+	for (let i = 0; i < opt.results; i++) {
+		t += minute * Math.round(1 + Math.random() * 5)
+		const duration = minute * Math.round(3 + Math.random() * 6)
+
+		journeys.push(mockJourney(from, to, t, t + duration))
+	}
+	return Promise.resolve(mockJourneys(from, to, +opt.when, opt.results))
+	return journeys
+}
+
+const locations = (query, opt = {}) => {
+	if ('string' !== typeof query) throw new Error('query must be a string.')
+
+	opt = Object.assign({
+		fuzzy: true, // find only exact matches?
+		results: 10, // how many search results?
+		stations: true,
+		addresses: true,
+		poi: true // points of interest
+	}, opt)
+
+	const res = []
+	for (let l of mockLocations) {
+		if (res.length >= opt.results) continue
+		if (l.type === 'station') {
+			if (opt.stations) res.push(l)
+		} else if (l.id) {
+			if (opt.poi) res.push(l)
+		} else if (opt.addresses) res.push(l)
+	}
+}
+
+const nearby = (latitude, longitude, opt = {}) => {
+	if ('number' !== typeof latitude) throw new Error('latitude must be a number.')
+	if ('number' !== typeof longitude) throw new Error('longitude must be a number.')
+	opt = Object.assign({
+		results: 8, // maximum number of results
+		distance: null, // maximum walking distance in meters
+		poi: false, // return points of interest?
+		stations: true, // return stations?
+	}, opt)
+
+	const nearby = []
+	for (let i = 0; i < opt.results; i++) {
+		const d = 10 + Math.random() * (opt.distance - 10)
+		const b = -180 + Math.random() * 360
+		const p = destination([longitude, latitude], d / 1000, b)
+		const [lon, lat] = p.geometry.coordinates
+
+		if (opt.poi && Math.random() < .3) {
+			const l = mockPOI()
+			l.latitude = lat
+			l.longitude = lon
+			l.distance = d
+			nearby.push(l)
+		} else {
+			const s = mockStation()
+			s.location.latitude = lat
+			s.location.longitude = lon
+			s.distance = d
+			nearby.push(s)
+		}
+	}
+
+	return Promise.resolve(nearby)
+}
+
+const journeyLeg = (ref, lineName, opt = {}) => {
+	opt = Object.assign({
+		// todo: passedStations
+	}, opt)
+	opt.when = opt.when || new Date()
+
+	const dep = opt.when
+	const arr = opt.when + 10 * minute
+	const leg = mockJourneyLeg(randomId(3), randomId(3), dep, arr)
+
+	return Promise.resolve(leg)
+}
+
+// todo: radar
+
+const client = {departures, journeys, locations, nearby}
+if (profile.journeyLeg) client.journeyLeg = journeyLeg
+// if (profile.radar) client.radar = radar
+return client
+
+module.exports = client

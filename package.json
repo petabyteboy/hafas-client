@@ -28,6 +28,7 @@
 		"node": ">=6"
 	},
 	"dependencies": {
+		"@turf/destination": "^5.1.5",
 		"fetch-ponyfill": "^4.1.0",
 		"lodash": "^4.17.4",
 		"luxon": "^0.2.7",
