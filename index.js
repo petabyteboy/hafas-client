@@ -134,7 +134,10 @@ const createClient = (profile, request = _request) => {
 				getPT: true, // todo: what is this?
 				outFrwd: true, // todo: what is this?
 				getIV: false, // todo: walk & bike as alternatives?
-				getPolyline: false // todo: shape for displaying on a map?
+				getPolyline: false, // todo: shape for displaying on a map?
+				// todo: what is getEco, ushrp, fwrd?
+				indoor: false,
+				getIST: false
 			}
 			if (profile.journeysNumF) query.numF = opt.results
 
