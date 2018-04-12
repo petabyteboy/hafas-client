@@ -25,14 +25,14 @@ module.exports = [
 		short: 'IR',
 		default: true
 	},
-	// {
-	// 	id: 'local-train',
-	// 	mode: 'train',
-	// 	bitmasks: [8],
-	// 	name: 'RegionalExpress & RegionalBahn',
-	// 	short: 'RE/RB',
-	// 	default: true
-	// },
+	{
+		id: 'local-train',
+		mode: 'train',
+		bitmasks: [8],
+		name: 'Nahverkehr',
+		short: 'Nahv.',
+		default: true
+	},
 	{
 		id: 'suburban',
 		mode: 'train',
