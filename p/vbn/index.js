@@ -20,7 +20,7 @@ const transformReqBody = (body) => {
 const insaProfile = {
 	locale: 'de-DE',
 	timezone: 'Europe/Berlin',
-	endpoint: 'http://fahrplaner.vbn.de/bin/mgate.exe',
+	endpoint: 'https://fahrplaner.vbn.de/bin/mgate.exe',
 	transformReqBody,
 
 	products: products,

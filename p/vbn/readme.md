@@ -1,18 +1,18 @@
-# INSA profile for `hafas-client`
+# VBN profile for `hafas-client`
 
-The [Nahverkehr Sachsen-Anhalt (NASA)](https://de.wikipedia.org/wiki/Nahverkehrsservice_Sachsen-Anhalt) offers [Informationssystem Nahverkehr Sachsen-Anhalt (INSA)](https://insa.de) to distribute their public transport data.
+The [*Verkehrsverbund Bremen/Niedersachsen (VBN)*](https://de.wikipedia.org/wiki/Verkehrsverbund_Bremen/Niedersachsen) is a public transportation provider for [Lower Saxony](https://en.wikipedia.org/wiki/Lower_Saxony). This profile adds *VBN*-specific customizations to `hafas-client`.
 
 ## Usage
 
 ```js
 const createClient = require('hafas-client')
-const insaProfile = require('hafas-client/p/insa')
+const vbnProfile = require('hafas-client/p/vbn')
 
-// create a client with INSA profile
-const client = createClient(insaProfile)
+// create a client with VBN profile
+const client = createClient(vbnProfile)
 ```
 
 
 ## Customisations
 
-- parses *INSA*-specific products (such as *Tourism Train*)
+- parses *VBN*-specific products (such as *Anrufverkehr*)

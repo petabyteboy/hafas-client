@@ -1,9 +1,9 @@
 'use strict'
 
 const createClient = require('../..')
-const insaProfile = require('.')
+const vbnProfile = require('.')
 
-const client = createClient(insaProfile)
+const client = createClient(vbnProfile)
 
 // from Bremen Hbf to Bremerhaven Hbf
 // client.journeys('008000050', '008000051', {results: 1})
