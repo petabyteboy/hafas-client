@@ -31,7 +31,8 @@ const createClient = (profile, request = _request) => {
 			direction: null, // only show departures heading to this station
 			duration:  10 // show departures for the next n minutes
 		}, opt)
-		opt.when = opt.when || new Date()
+		opt.when = new Date(opt.when || Date.now())
+		if (Number.isNaN(+opt.when)) throw new Error('opt.when is invalid')
 		const products = profile.formatProductsFilter(opt.products || {})
 
 		const dir = opt.direction ? profile.formatStation(opt.direction) : null
@@ -57,8 +58,8 @@ const createClient = (profile, request = _request) => {
 	}
 
 	const journeys = (from, to, opt = {}) => {
-		from = profile.formatLocation(profile, from)
-		to = profile.formatLocation(profile, to)
+		from = profile.formatLocation(profile, from, 'from')
+		to = profile.formatLocation(profile, to, 'to')
 
 		if (('earlierThan' in opt) && ('laterThan' in opt)) {
 			throw new Error('opt.laterThan and opt.laterThan are mutually exclusive.')
@@ -93,9 +94,11 @@ const createClient = (profile, request = _request) => {
 			accessibility: 'none', // 'none', 'partial' or 'complete'
 			bike: false, // only bike-friendly journeys
 			tickets: false, // return tickets?
+			polylines: false // return leg shapes?
 		}, opt)
-		if (opt.via) opt.via = profile.formatLocation(profile, opt.via)
-		opt.when = opt.when || new Date()
+		if (opt.via) opt.via = profile.formatLocation(profile, opt.via, 'opt.via')
+		opt.when = new Date(opt.when || Date.now())
+		if (Number.isNaN(+opt.when)) throw new Error('opt.when is invalid')
 
 		const filters = [
 			profile.formatProductsFilter(opt.products || {})
@@ -113,7 +116,7 @@ const createClient = (profile, request = _request) => {
 		// `CGI_READ_FAILED` if you pass `numF`, the parameter for the number
 		// of results. To circumvent this, we loop here, collecting journeys
 		// until we have enough.
-		// see https://github.com/derhuerst/hafas-client/pull/23#issuecomment-370246163
+		// see https://github.com/public-transport/hafas-client/pull/23#issuecomment-370246163
 		// todo: check if `numF` is supported again, revert this change
 		const journeys = []
 		const more = (when, journeysRef) => {
@@ -129,12 +132,12 @@ const createClient = (profile, request = _request) => {
 				arrLocL: [to],
 				jnyFltrL: filters,
 				getTariff: !!opt.tickets,
+				getPolyline: !!opt.polylines,
 
 				// todo: what is req.gisFltrL?
 				getPT: true, // todo: what is this?
 				outFrwd: true, // todo: what is this?
 				getIV: false, // todo: walk & bike as alternatives?
-				getPolyline: false, // todo: shape for displaying on a map?
 				// todo: what is getEco, ushrp, fwrd?
 				indoor: false,
 				getIST: false
@@ -148,7 +151,10 @@ const createClient = (profile, request = _request) => {
 			})
 			.then((d) => {
 				if (!Array.isArray(d.outConL)) return []
-				const parse = profile.parseJourney(profile, d.locations, d.lines, d.remarks)
+
+				const polylines = opt.polylines && d.common.polyL || []
+				const parse = profile.parseJourney(profile, d.locations, d.lines, d.remarks, polylines)
+
 				if (!journeys.earlierRef) journeys.earlierRef = d.outCtxScrB
 
 				let latestDep = -Infinity
@@ -274,21 +280,26 @@ const createClient = (profile, request = _request) => {
 			throw new Error('lineName must be a non-empty string.')
 		}
 		opt = Object.assign({
-			passedStations: true // return stations on the way?
+			passedStations: true, // return stations on the way?
+			polyline: false
 		}, opt)
-		opt.when = opt.when || new Date()
+		opt.when = new Date(opt.when || Date.now())
+		if (Number.isNaN(+opt.when)) throw new Error('opt.when is invalid')
 
 		return request(profile, {
 			cfg: {polyEnc: 'GPA'},
 			meth: 'JourneyDetails',
 			req: {
+				// todo: getTrainComposition
 				jid: ref,
 				name: lineName,
-				date: profile.formatDate(profile, opt.when)
+				date: profile.formatDate(profile, opt.when),
+				getPolyline: !!opt.polyline
 			}
 		})
 		.then((d) => {
-			const parse = profile.parseJourneyLeg(profile, d.locations, d.lines, d.remarks)
+			const polylines = opt.polyline && d.common.polyL || []
+			const parse = profile.parseJourneyLeg(profile, d.locations, d.lines, d.remarks, polylines)
 
 			const leg = { // pretend the leg is contained in a journey
 				type: 'JNY',
@@ -305,14 +316,18 @@ const createClient = (profile, request = _request) => {
 		if ('number' !== typeof west) throw new Error('west must be a number.')
 		if ('number' !== typeof south) throw new Error('south must be a number.')
 		if ('number' !== typeof east) throw new Error('east must be a number.')
+		if (north <= south) throw new Error('north must be larger than south.')
+		if (east <= west) throw new Error('east must be larger than west.')
 
 		opt = Object.assign({
 			results: 256, // maximum number of vehicles
 			duration: 30, // compute frames for the next n seconds
 			frames: 3, // nr of frames to compute
-			products: null // optionally an object of booleans
+			products: null, // optionally an object of booleans
+			polylines: false // return a track shape for each vehicle?
 		}, opt || {})
-		opt.when = opt.when || new Date()
+		opt.when = new Date(opt.when || Date.now())
+		if (Number.isNaN(+opt.when)) throw new Error('opt.when is invalid')
 
 		const durationPerStep = opt.duration / Math.max(opt.frames, 1) * 1000
 		return request(profile, {
@@ -336,7 +351,8 @@ const createClient = (profile, request = _request) => {
 		.then((d) => {
 			if (!Array.isArray(d.jnyL)) return []
 
-			const parse = profile.parseMovement(profile, d.locations, d.lines, d.remarks)
+			const polylines = opt.polyline && d.common.polyL || []
+			const parse = profile.parseMovement(profile, d.locations, d.lines, d.remarks, polylines)
 			return d.jnyL.map(parse)
 		})
 	}
