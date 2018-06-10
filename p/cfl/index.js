@@ -26,8 +26,9 @@ const insaProfile = {
 
 	products: products,
 
-	journeyLeg: true,
+	trip: true,
 	radar: true
+	// todo: reachableFrom?
 }
 
 module.exports = insaProfile;
