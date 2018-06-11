@@ -27,6 +27,14 @@ module.exports = [
 		default: true
 	},
 	{
+		id: 'bus',
+		mode: 'bus',
+		bitmasks: [32],
+		name: 'Bus',
+		short: 'Bus',
+		default: true
+	},
+	{
 		id: 'gondola',
 		mode: 'gondola',
 		bitmasks: [512],
