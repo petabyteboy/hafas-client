@@ -10,7 +10,7 @@ const client = createClient(vbnProfile)
 client.departures('008000050', {duration: 5})
 // client.locations('Bremen Hbf', {results: 2})
 // client.locations('Hochschule Bremen', {results: 2})
-// client.location('008000050') // Bremen Hbf
+// client.station('008000050') // Bremen Hbf
 // client.nearby({
 // 	type: 'location',
 // 	latitude: 53.1,
