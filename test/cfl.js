@@ -11,6 +11,8 @@ const createClient = require('..')
 const cflProfile = require('../p/cfl')
 const products = require('../p/cfl/products')
 const {
+	line: createValidateLine,
+	journeyLeg: createValidateJourneyLeg,
 	movement: _validateMovement
 } = require('./lib/validators')
 const createValidate = require('./lib/validate-fptf-with')
@@ -29,6 +31,18 @@ const cfg = {
 	products
 }
 
+const _validateLine = createValidateLine(cfg)
+const validateLine = (validate, l, name) => {
+	if (!l.direction) l = Object.assign({}, l, {direction: 'foo'})
+	_validateLine(validate, l, name)
+}
+
+const _validateJourneyLeg = createValidateJourneyLeg(cfg)
+const validateJourneyLeg = (validate, l, name) => {
+	if (!l.direction) l = Object.assign({}, l, {direction: 'foo'})
+	_validateJourneyLeg(validate, l, name)
+}
+
 const validateMovement = (val, m, name = 'movement') => {
 	// todo: fix this upstream
 	const withFakeLocation = Object.assign({}, m)
@@ -45,6 +59,8 @@ const validateMovement = (val, m, name = 'movement') => {
 }
 
 const validate = createValidate(cfg, {
+	line: validateLine,
+	journeyLeg: validateJourneyLeg,
 	movement: validateMovement
 })
 
@@ -126,7 +142,7 @@ test('Luxembourg to Kloster Unser Lieben Frauen', co(function*(t) {
 		journeys,
 		validate,
 		fromId: luxembourg,
-		to: kloster
+		to: centreHospitalier
 	})
 	t.end()
 }))
