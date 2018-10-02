@@ -82,6 +82,8 @@ const regensburgHbf = '8000309'
 const blnOstbahnhof = '8010255'
 const blnTiergarten = '8089091'
 const blnJannowitzbrücke = '8089019'
+const berlinSüdkreuz = '8011113'
+const kölnHbf = '8000207'
 
 test('journeys – Berlin Schwedter Str. to München Hbf', co(function* (t) {
 	const journeys = yield client.journeys(blnSchwedterStr, münchenHbf, {
