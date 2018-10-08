@@ -5,6 +5,8 @@ const a = require('assert')
 const tapePromise = require('tape-promise').default
 const tape = require('tape')
 const isRoughlyEqual = require('is-roughly-equal')
+const maxBy = require('lodash/maxBy')
+const flatMap = require('lodash/flatMap')
 
 const {createWhen} = require('./lib/util')
 const co = require('./lib/co')
@@ -31,6 +33,7 @@ const testJourneysWithDetour = require('./lib/journeys-with-detour')
 const testReachableFrom = require('./lib/reachable-from')
 
 const isObj = o => o !== null && 'object' === typeof o && !Array.isArray(o)
+const minute = 60 * 1000
 
 const when = createWhen('Europe/Berlin', 'de-DE')
 
@@ -82,8 +85,6 @@ const regensburgHbf = '8000309'
 const blnOstbahnhof = '8010255'
 const blnTiergarten = '8089091'
 const blnJannowitzbrücke = '8089019'
-const berlinSüdkreuz = '8011113'
-const kölnHbf = '8000207'
 
 test('journeys – Berlin Schwedter Str. to München Hbf', co(function* (t) {
 	const journeys = yield client.journeys(blnSchwedterStr, münchenHbf, {
@@ -220,6 +221,102 @@ test('refreshJourney', co(function* (t) {
 		toId: münchenHbf,
 		when
 	})
+	t.end()
+}))
+
+test('journeysFromTrip – U Kochstr./Checkpoint Charlie to U Stadtmitte, then to U Klosterstr.', co(function* (t) {
+	const blnKochstrCheckpoint = '730874'
+	const blnStadtmitteU6 = '732541'
+	const berlinKlosterstr = '732545'
+
+	const isTransitLeg = leg => !!leg.line
+	const stationIdOrStopId = stop => stop.station && stop.station.id || stop.id
+	const departureOf = st => +new Date(st.departure || st.formerScheduledDeparture)
+	const arrivalOf = st => +new Date(st.arrival || st.formerScheduledArrival)
+
+	// Note: `journeysFromTrip` only supports queries *right now*, so can't use the unified
+	// `when` used in all other tests. To make this test less brittle, we pick a connection
+	// that is served all night. 🙄
+	const when = new Date()
+	const customCfg = Object.assign({}, cfg)
+	customCfg.when = when
+	const validate = createValidate(customCfg)
+
+	// Find a U6 that will soon go from U Kochstr./Checkpoint Charlie to U Stadtmitte (thus to the north).
+	const _journeys = yield client.journeys(blnKochstrCheckpoint, blnStadtmitteU6, {
+		departure: when,
+		transfers: 0, products: {regionalExp: false, regional: false, suburban: false},
+		results: 3, stopovers: true, remarks: false
+	})
+	const _journey = _journeys.find((j) => {
+		const tLeg = j.legs.find(isTransitLeg)
+		return tLeg.departure && new Date(tLeg.departure) > Date.now()
+	})
+	const _leg = _journey.legs.find(isTransitLeg)
+	t.equal(stationIdOrStopId(_leg.destination), blnStadtmitteU6, 'precondition failed: leg to U Stadtmitte not found')
+
+	const _trip = yield client.trip(_leg.id, _leg.line.name, {stopovers: true, remarks: false})
+	const _tripIds = flatMap(_trip.stopovers.map((st) => {
+		return st.station ? [st.stop.id, st.station.id] : [st.stop.id]
+	}))
+	const idxInTrip = (stop) => {
+		let i = -1
+		if (stop.station) i = _tripIds.indexOf(stop.station.id)
+		if (i === -1) i = _tripIds.indexOf(stop.id)
+		return i
+	}
+
+	// Find a stopover in the past.
+	const prevStopover = maxBy(_trip.stopovers.filter(st => departureOf(st) < when), departureOf)
+	t.ok(prevStopover, 'precondition failed: no past stopover found')
+	const prevStopId = prevStopover.stop.id
+	const prevStationId = prevStopover.stop.station && prevStopover.stop.station.id || NaN
+
+	// todo: Error: Suche aus dem Zug: Vor Abfahrt des Zuges
+	const journeys = yield client.journeysFromTrip(_leg.id, prevStopover, berlinKlosterstr, {
+		stopovers: true, remarks: false
+	})
+
+	// Validate with fake prices.
+	const withFakePrice = (j) => {
+		const clone = Object.assign({}, j)
+		clone.price = {amount: 123, currency: 'EUR'}
+		return clone
+	}
+	validate(t, journeys.map(withFakePrice), 'journeys', 'journeysFromTrip')
+
+	for (let i = 0; i < journeys.length; i++) {
+		const j = journeys[i]
+		const n = `journeys[${i}]`
+
+		// 1st & 2nd transit leg
+		const iLegA = j.legs.findIndex(l => !!l.line)
+		const legA = j.legs[iLegA]
+		const iLegB = 1 + j.legs.slice(iLegA + 1).findIndex(l => !!l.line)
+		const legB = j.legs[iLegB]
+
+		const nChange = n + `.legs[${iLegA}].destination`
+		const changeId = stationIdOrStopId(legA.destination)
+		t.equal(changeId, blnStadtmitteU6, nChange + ' is not U Stadtmitte (U6)')
+		const destId = stationIdOrStopId(legB.destination)
+		t.equal(destId, berlinKlosterstr, n + `.legs[${iLegB}].destination is not U Spittelmarkt`)
+
+		// We expect the first transit leg of the journey to go from the stop the train (trip)
+		// has *previously* been at to the stop where to change (U Mehringdamm).
+		// Because of inexact departure times, we can only assert that
+
+		// - the leg *doesn't* start with the first stopover of the trip
+		const nOrigin = n + `.legs[${iLegA}].origin`
+		const originI = idxInTrip(legA.origin)
+		t.notOk(originI === -1, nOrigin + ' is missing in the trip')
+		t.ok(originI > 0, nOrigin + ' is the first stopover of the trip')
+
+		// - on the trip, the change stop is *after* the origin
+		const changeI = idxInTrip(legA.destination)
+		t.notOk(changeI === -1, nChange + ' is missing in the trip')
+		t.ok(changeI > originI)
+	}
+
 	t.end()
 }))
 
