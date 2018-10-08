@@ -27,6 +27,18 @@ client.journeys('8011167', '8000261', {results: 1, tickets: true})
 // 	maxDuration: 50
 // })
 
+// client.journeys('8011113', '8000261', {
+// 	departure: Date.now() - 2 * 60 * 60 * 1000,
+// 	results: 1, stopovers: true, transfers: 1
+// })
+// .then((js) => {
+// 	const leg = js[0].legs.find(l => l.line.product === 'nationalExp')
+// 	const prevStopover = leg.stopovers.find((st) => {
+// 		return st.departure && new Date(st.departure) < Date.now()
+// 	})
+// 	return client.journeysFromTrip(leg.id, prevStopover, '8000207')
+// })
+
 .then((data) => {
 	console.log(require('util').inspect(data, {depth: null, colors: true}))
 }, console.error)
