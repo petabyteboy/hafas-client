@@ -207,13 +207,7 @@ const createClient = (profile, userAgent, request = _request) => {
 			.then((d) => {
 				if (!Array.isArray(d.outConL)) return []
 
-				const parse = profile.parseJourney(profile, opt, {
-					locations: d.locations,
-					lines: d.lines,
-					hints: d.hints,
-					warnings: d.warnings,
-					polylines: opt.polylines && d.common.polyL || []
-				})
+				const parse = profile.parseJourney(profile, opt, d)
 
 				if (!journeys.earlierRef) journeys.earlierRef = d.outCtxScrB
 
@@ -265,13 +259,7 @@ const createClient = (profile, userAgent, request = _request) => {
 				throw new Error('invalid response')
 			}
 
-			const parse = profile.parseJourney(profile, opt, {
-				locations: d.locations,
-				lines: d.lines,
-				hints: d.hints,
-				warnings: d.warnings,
-				polylines: opt.polylines && d.common.polyL || []
-			})
+			const parse = profile.parseJourney(profile, opt, d)
 			return parse(d.outConL[0])
 		})
 	}
@@ -305,7 +293,7 @@ const createClient = (profile, userAgent, request = _request) => {
 		.then((d) => {
 			if (!d.match || !Array.isArray(d.match.locL)) return []
 			const parse = profile.parseLocation
-			return d.match.locL.map(loc => parse(profile, opt, {lines: d.lines}, loc))
+			return d.match.locL.map(loc => parse(profile, opt, d, loc))
 		})
 	}
 
@@ -328,7 +316,7 @@ const createClient = (profile, userAgent, request = _request) => {
 				// todo: proper stack trace?
 				throw new Error('invalid response')
 			}
-			return profile.parseLocation(profile, opt, {lines: d.lines}, d.locL[0])
+			return profile.parseLocation(profile, opt, d, d.locL[0])
 		})
 	}
 
@@ -394,13 +382,7 @@ const createClient = (profile, userAgent, request = _request) => {
 			}
 		})
 		.then((d) => {
-			const parse = profile.parseJourneyLeg(profile, opt, {
-				locations: d.locations,
-				lines: d.lines,
-				hints: d.hints,
-				warnings: d.warnings,
-				polylines: opt.polyline && d.common.polyL || []
-			})
+			const parse = profile.parseJourneyLeg(profile, opt, d)
 
 			const leg = { // pretend the leg is contained in a journey
 				type: 'JNY',
@@ -453,13 +435,7 @@ const createClient = (profile, userAgent, request = _request) => {
 		.then((d) => {
 			if (!Array.isArray(d.jnyL) || d.jnyL.length === 0) return []
 
-			const parse = profile.parseMovement(profile, opt, {
-				locations: d.locations,
-				lines: d.lines,
-				hints: d.hints,
-				warnings: d.warnings,
-				polylines: opt.polyline && d.common.polyL || []
-			})
+			const parse = profile.parseMovement(profile, opt, d)
 			return d.jnyL.map(parse)
 		})
 	}
