@@ -9,6 +9,10 @@ const co = require('./lib/co')
 const createClient = require('..')
 const invgProfile = require('../p/invg')
 const products = require('../p/invg/products')
+const {
+	journeyLeg: createValidateJourneyLeg,
+	movement: _validateMovement
+} = require('./lib/validators')
 const createValidate = require('./lib/validate-fptf-with')
 const testJourneysStationToStation = require('./lib/journeys-station-to-station')
 const testJourneysStationToAddress = require('./lib/journeys-station-to-address')
@@ -20,8 +24,29 @@ const testDepartures = require('./lib/departures')
 const testArrivals = require('./lib/arrivals')
 
 const when = createWhen(invgProfile.timezone, invgProfile.locale)
+const cfg = {when, products}
 
-const validate = createValidate({when, products})
+const _validateJourneyLeg = createValidateJourneyLeg(cfg)
+const validateJourneyLeg = (val, leg, name = 'journeyLeg') => {
+	if (!leg.direction) {
+		leg = Object.assign({}, leg)
+		leg.direction = 'foo'
+	}
+	_validateJourneyLeg(val, leg, name)
+}
+
+const validateMovement = (val, m, name = 'movement') => {
+	if (!m.direction) {
+		m = Object.assign({}, m)
+		m.direction = 'foo'
+	}
+	_validateMovement(val, m, name)
+}
+
+const validate = createValidate(cfg, {
+	journeyLeg: validateJourneyLeg,
+	movement: validateMovement
+})
 
 const test = tapePromise(tape)
 const client = createClient(invgProfile, 'public-transport/hafas-client:test')
