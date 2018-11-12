@@ -5,8 +5,8 @@ const cmtaProfile = require('.')
 
 const client = createClient(cmtaProfile, 'hafas-client-example')
 
-// Ingolstadt Hbf to Ehringer Tor, Ulm
-client.journeys('8000183', '0801236', {results: 1})
+// Ingolstadt Hbf to Audi Parkplatz
+client.journeys('8000183', '84999', {results: 1})
 // .then(([journey]) => {
 // 	const leg = journey.legs[0]
 // 	return client.trip(leg.id, leg.line.name, {polyline: true})
@@ -19,7 +19,7 @@ client.journeys('8000183', '0801236', {results: 1})
 // client.arrivals('8000183', {duration: 10, stationLines: true})
 
 // client.locations('tillystr 1', {results: 2})
-// client.station('000005534') // Downtown light rail station
+// client.station('84999') // Audi Parkplatz
 // client.nearby({
 // 	type: 'location',
 // 	latitude: 48.74453,
