@@ -94,8 +94,6 @@ The returned [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript
 			public: true,
 			mode: 'train',
 			product: 'suburban',
-			class: 16,
-			productCode: 4,
 			operator: {
 				type: 'operator',
 				id: 's-bahn-berlin-gmbh',
