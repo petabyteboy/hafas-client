@@ -1,5 +1,21 @@
 # Changelog
 
+## `4.0.0`
+
+This version is not fully backwords-compatible. Check out [the migration guide](migrating-to-4.md).
+
+### new features ✨
+
+- todo
+
+### breaking changes 💥
+
+- todo
+
+### bugfixes
+
+- todo
+
 ## `3.7.0`
 
 - e867dac/f097022 `opt.stopovers`, `departure.nextStopovers`/`arrival.previousStopovers`
